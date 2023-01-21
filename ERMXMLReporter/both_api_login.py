@@ -3,6 +3,8 @@ from tkinter import scrolledtext
 import requests
 import json
 import os
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class PasswordLoginWindow():
     def __init__(self):
@@ -21,6 +23,9 @@ class PasswordLoginWindow():
         self.web_api_username = tk.StringVar()
         self.web_api_password = tk.StringVar()
         self.api_verify_ssl_cert = tk.BooleanVar()
+        self.connect_api_token = None
+        self.web_api_token = None
+        self.hosts = None
         self.api_label = tk.Label(self.main_window, text='Connect API IP', pady=10)
         # old input...
         # self.api_ip_input = tk.Text(self.main_window, height=1, width=20)
@@ -46,13 +51,30 @@ class PasswordLoginWindow():
         # verify SSL certificate checkbox
         self.verify_ssl_certificate_checkbox = tk.Checkbutton(self.main_window, text='Verify SSL Certificate', variable=self.api_verify_ssl_cert, onvalue=True, offvalue=False, pady=0)
         self.success_message_textbox = tk.Label(self.main_window, text='', width=50, height=2, justify='center')
+        self.web_api_hosts_success_message_textbox = tk.Label(self.main_window, text='', width=5, height=2, justify='center')
+        # self.connect_hosts_success_message_textbox = tk.Label(self.main_window, text='', width=5, height=2, justify='center')
         # login button
         self.login_button = tk.Button(self.main_window, text='Login', command=self.login)
         # self.login_button = tk.Button(self.main_window, text='Login', command=connect_api_requests.get_token(self.api_ip, self.api_username, self.api_password, self.api_verify_ssl_cert))
         self.run_reports_button = tk.Button(self.main_window, text='Run Reports', command=self.run_reports)
-    
+
+    def get_web_api_hosts(self):
+        url = 'https://{}/api/hosts/'.format(str(self.api_ip))
+        headers = {'Authorization': str(self.web_api_token)}
+        try:
+            r = requests.get(url=url, headers=headers, verify=bool(self.api_verify_ssl_cert.get()))
+            if r.status_code == 200:
+                print(r.json().keys())
+                print(json.dumps(r.json(), sort_keys=True, indent=2))
+        except Exception as e:
+            print(str(e))
+
+    def get_connect_hosts_by_ip(self):
+        pass
+
     def run_reports(self):
-        print('Got to "run_reports" function')
+        self.get_web_api_hosts()
+        self.get_connect_hosts_by_ip()
 
     def launch(self):
         self.api_label.pack()
@@ -68,6 +90,7 @@ class PasswordLoginWindow():
         self.verify_ssl_certificate_checkbox.pack()
         # success message textbox
         self.success_message_textbox.pack()
+        self.web_api_hosts_success_message_textbox.pack()
         self.login_button.pack()
         self.run_reports_button.pack()
         self.main_window.mainloop()
@@ -99,12 +122,13 @@ class PasswordLoginWindow():
             if r.status_code == 200 and web_api_req.status_code == 200:
                 # stopping point -- before configuring 
                 self.success_message_textbox.config(text='Succesfully authenticated to:\n{}'.format(self.api_ip))
-                resp_dict = r.json()
-                print(json.dumps(resp_dict, sort_keys=True, indent=2))
+                self.connect_api_token = r.json()['data']['token']
+                self.web_api_token = r.text
         except Exception as e:
             print(str(e))
             print(e.__traceback__)
             self.success_message_textbox.config(text='Failed to authenticate...\n{}'.format(str(e)))
+
         
 
     # working code below!! b4 changes
