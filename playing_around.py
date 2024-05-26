@@ -27,9 +27,9 @@ class PopUpWindow():
 
 
 class MainWindow():
-    def __init__(self):
+    def __init__(self, title='Playing Around'):
         self.root = tk.Tk()
-        self.root.title("Playing Around")
+        self.root.title(title)
         self.width = 1150
         self.height = 600
         self.screen_width = self.root.winfo_screenwidth()
@@ -48,7 +48,18 @@ class MainWindow():
         self.root.mainloop()
 
 
-main_window = MainWindow()
-pop_up_window = PopUpWindow(main_window)
-test_label = ttk.Label(pop_up_window.pop_up_window, text="Test Label")
+main_window = MainWindow('Policy Parser')
+
+pop_up_window = PopUpWindow(main_window, title="Login")
+username_label = ttk.Label(pop_up_window.pop_up_window, text="Username")
+username_label.grid(row=0, column=0, padx=10, pady=10)
+username_entry = ttk.Entry(pop_up_window.pop_up_window)
+username_entry.grid(row=0, column=1, padx=10, pady=10)
+password_label = ttk.Label(pop_up_window.pop_up_window, text="Password")
+password_label.grid(row=1, column=0, padx=10, pady=10)
+password_entry = ttk.Entry(pop_up_window.pop_up_window)
+password_entry.grid(row=1, column=1, padx=10, pady=10)
+login_button = ttk.Button(pop_up_window.pop_up_window, text="Login")
+login_button.grid(row=2, column=0, columnspan=2, padx=10, pady=10)
+
 main_window.start_program()
