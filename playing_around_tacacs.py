@@ -12,6 +12,7 @@ import urllib3
 import random
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+
 def ssh_function(ip, username, password):
     # open an SSH session with the provided IP, username, and password
     # initial_msg_box = messagebox
@@ -32,6 +33,7 @@ def ssh_function(ip, username, password):
         # messagebox.showinfo('Authentication Result', 'Successful Authentication')
 
 def execute_commands(hostname, username, password, commands_to_exec=None):
+    print(hostname, username, password, commands_to_exec)
     # set up SSH client
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -104,9 +106,9 @@ class PopUpWindow():
         self.password_entry = ttk.Entry(self.pop_up_window)
         self.password_entry.grid(row=2, column=1, padx=10, pady=10)
         self.login_button = ttk.Button(self.pop_up_window, text="Login", command=lambda: ssh_function(self.host_entry.get(), self.username_entry.get(), self.password_entry.get()))
-        self.main_window.host = self.host_entry.get()
-        self.main_window.username = self.username_entry.get()
-        self.main_window.password = self.password_entry.get()
+        self.host = self.host_entry.get()
+        self.username = self.username_entry.get()
+        self.password = self.password_entry.get()
         self.login_button.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
 
 
@@ -133,7 +135,7 @@ class MainWindow():
         self.command_label = ttk.Label(self.inner_frame, text="Commands")
         self.command_label.grid(row=0, column=0, padx=10, pady=10)
         self.command_result_label = ttk.Label(self.inner_frame, text="Command Results")
-        self.command_result_label.grid(row=0, column=2, padx=10, pady=10)
+        self.command_result_label.grid(row=1, column=0, padx=10, pady=10)
         self.command_entry = ttk.Entry(self.inner_frame)
         self.command_entry.grid(row=0, column=1, padx=10, pady=10)
         self.send_button = ttk.Button(self.inner_frame, text="Execute Command", command=lambda: execute_commands(self.host, self.username, self.password, self.command_entry.get()))
@@ -163,3 +165,4 @@ pop_up_window = PopUpWindow(main_window, title="Login")
 # login_button.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
 
 main_window.start_program()
+print(main_window.host, main_window.username, main_window.password)
