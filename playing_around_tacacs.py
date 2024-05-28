@@ -68,6 +68,12 @@ def execute_commands(hostname, username, password, commands_to_exec=None):
     SESSION = ssh
     global APPLIANCE_IP
     APPLIANCE_IP = hostname
+    global HOST
+    HOST = None
+    global USERNAME
+    USERNAME = None
+    global PASSWORD
+    PASSWORD = None
     
     # close SSH conn
     # ssh.close()
@@ -114,9 +120,6 @@ class PopUpWindow():
 
 class MainWindow():
     def __init__(self, title='Playing Around'):
-        self.host = None
-        self.username = None
-        self.password = None
         self.root = tk.Tk()
         self.root.title(title)
         self.width = 1150
@@ -138,7 +141,7 @@ class MainWindow():
         self.command_result_label.grid(row=1, column=0, padx=10, pady=10)
         self.command_entry = ttk.Entry(self.inner_frame)
         self.command_entry.grid(row=0, column=1, padx=10, pady=10)
-        self.send_button = ttk.Button(self.inner_frame, text="Execute Command", command=lambda: execute_commands(self.host, self.username, self.password, self.command_entry.get()))
+        self.send_button = ttk.Button(self.inner_frame, text="Execute Command", command=lambda: execute_commands(HOST, USERNAME, PASSWORD, self.command_entry.get()))
         self.send_button.grid(row=0, column=3, padx=10, pady=10)
 
     def start_program(self):
