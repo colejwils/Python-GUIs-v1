@@ -168,4 +168,4 @@ pop_up_window = PopUpWindow(main_window, title="Login")
 # login_button.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
 
 main_window.start_program()
-print(main_window.host, main_window.username, main_window.password)
+# print(main_window.host, main_window.username, main_window.password)s
