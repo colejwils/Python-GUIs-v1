@@ -6,7 +6,7 @@ def main(page: ft.Page):
     page.window_width = 500
     page.window_height = 600
 
-    # Use a light theme with a custom color scheme
+    # Use a light theme with custom color scheme
     page.theme_mode = ft.ThemeMode.LIGHT
     page.theme = ft.Theme(
         color_scheme=ft.ColorScheme(
@@ -18,14 +18,11 @@ def main(page: ft.Page):
             on_background="black",
             surface="white",
             on_surface="black",
-        ),
+        )
     )
-    # Make the page background white
     page.bgcolor = "white"
 
-    # ─────────────────────────────────────────────────────────
     # In-memory “state”
-    # ─────────────────────────────────────────────────────────
     user_data = {
         "logged_in": False,
         "username": "",
@@ -57,11 +54,14 @@ def main(page: ft.Page):
         page.views.clear()
 
         if route == "/":
+            # Show login view
             page.views.append(build_login_view())
         elif route == "/main":
+            # Show main "Tests" list after logging in
             if user_data["logged_in"]:
                 page.views.append(build_tests_view())
             else:
+                # If not logged in, redirect to "/"
                 page.go("/")
         elif route.startswith("/test/"):
             test_id = route.replace("/test/", "")
@@ -88,10 +88,7 @@ def main(page: ft.Page):
     # 1. BUILD LOGIN VIEW
     # ─────────────────────────────────────────────────────────
     def build_login_view():
-        username_tf = ft.TextField(
-            label="Username",
-            width=300,
-        )
+        username_tf = ft.TextField(label="Username", width=300)
         password_tf = ft.TextField(
             label="Password",
             password=True,
@@ -105,10 +102,9 @@ def main(page: ft.Page):
                 user_data["logged_in"] = True
                 page.go("/main")
             else:
-                # Show an orange snack bar if fields are empty
                 page.snack_bar = ft.SnackBar(
-                    content=ft.Text("Please enter username and password!", color="white"),
-                    bgcolor="#F36F21"
+                    ft.Text("Please enter username and password!", color="white"),
+                    bgcolor="#F36F21",  # orange background
                 )
                 page.snack_bar.open = True
                 page.update()
@@ -119,8 +115,8 @@ def main(page: ft.Page):
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             controls=[
                 ft.Text(
-                    "Welcome! Please log in.", 
-                    size=24, 
+                    "Welcome! Please log in.",
+                    size=24,
                     weight=ft.FontWeight.BOLD,
                     color="black"
                 ),
@@ -129,13 +125,11 @@ def main(page: ft.Page):
                 password_tf,
                 ft.Divider(height=10, color="transparent"),
                 ft.ElevatedButton(
-                    "Login", 
+                    "Login",
                     width=300,
                     on_click=login_click,
-                    style=ft.ButtonStyle(
-                        color={ft.MaterialState.DEFAULT: "white"},
-                        bgcolor={ft.MaterialState.DEFAULT: "#74C236"},  # Forescout green
-                    ),
+                    color="white",          # text color
+                    bgcolor="#74C236",      # Forescout green
                 ),
             ],
         )
@@ -163,10 +157,8 @@ def main(page: ft.Page):
                     t["name"],
                     width=300,
                     on_click=lambda e, tid=t["id"]: page.go(f"/test/{tid}"),
-                    style=ft.ButtonStyle(
-                        color={ft.MaterialState.DEFAULT: "white"},
-                        bgcolor={ft.MaterialState.DEFAULT: "#74C236"},  # Forescout green
-                    ),
+                    color="white",
+                    bgcolor="#74C236",  # Forescout green
                 )
             )
 
@@ -230,8 +222,8 @@ def main(page: ft.Page):
             config["eap_type"] = eap_dropdown.value
 
             page.snack_bar = ft.SnackBar(
-                content=ft.Text(f"Running {test_title} with EAP={config['eap_type']}...", color="white"),
-                bgcolor="#00ADEF"  # Forescout teal
+                ft.Text(f"Running {test_title} with EAP={config['eap_type']}...", color="white"),
+                bgcolor="#00ADEF"  # teal
             )
             page.snack_bar.open = True
             page.update()
@@ -271,10 +263,8 @@ def main(page: ft.Page):
                 ft.ElevatedButton(
                     "Run Test",
                     on_click=save_and_run_test,
-                    style=ft.ButtonStyle(
-                        color={ft.MaterialState.DEFAULT: "white"},
-                        bgcolor={ft.MaterialState.DEFAULT: "#74C236"},  # Forescout green
-                    ),
+                    color="white",
+                    bgcolor="#74C236",  # Forescout green
                 ),
             ],
             vertical_alignment=ft.MainAxisAlignment.START,
