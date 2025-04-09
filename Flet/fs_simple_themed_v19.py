@@ -620,6 +620,7 @@ def main(page: ft.Page):
                 action="Close",
                 on_action=lambda x: close_snack(x)
             )
+            print('Snack bar should be present..')
             page.snack_bar = snack
             page.snack_bar.open = True
             page.update()
