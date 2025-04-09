@@ -257,7 +257,6 @@ def main(page: ft.Page):
         print(f"SSH Password: {host['ssh_password']}")
         print(f"SSH Key: {host['ssh_key_file']}")
         print("Simulating SSH connection & resource monitoring...\n")
-        
 
 
     # ─────────────────────────────────────────────────────────
@@ -1283,7 +1282,6 @@ def main(page: ft.Page):
 
         def fetch_data_click(e):
             import random
-import paramiko
             for host, d in diagnostics_data.items():
                 last_time = d["timestamps"][-1] if d["timestamps"] else 0
                 d["timestamps"].append(last_time + 1)
