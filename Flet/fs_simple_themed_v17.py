@@ -5,26 +5,26 @@ import paramiko
 
 
 # <--! SSH TEST AREA !-->
-# def test_ssh_connection(hostname, ip_address, port, username, password=None, key=None):
-#     client = paramiko.SSHClient()
-#     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+def test_ssh_connection(hostname, ip_address, port, username, password=None, key=None):
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     
-#     try:
-#         if key:
-#             private_key = paramiko.RSAKey.from_private_key_file(key)
-#             client.connect(hostname=hostname, port=port, username=username, pkey=private_key)
-#         else:
-#             client.connect(hostname=hostname, port=port, username=username, password=password)
+    try:
+        if key:
+            private_key = paramiko.RSAKey.from_private_key_file(key)
+            client.connect(hostname=hostname, port=port, username=username, pkey=private_key)
+        else:
+            client.connect(hostname=hostname, port=port, username=username, password=password)
         
-#         print(f"SSH connection to {hostname} ({ip_address}) on port {port} successful!")
-#     except paramiko.AuthenticationException:
-#         print(f"Failed to authenticate to {hostname} ({ip_address}) on port {port}. Invalid credentials.")
-#     except paramiko.SSHException as e:
-#         print(f"SSH connection to {hostname} ({ip_address}) on port {port} failed: {str(e)}")
-#     except Exception as e:
-#         print(f"An error occurred while connecting to {hostname} ({ip_address}) on port {port}: {str(e)}")
-#     finally:
-#         client.close()
+        print(f"SSH connection to {hostname} ({ip_address}) on port {port} successful!")
+    except paramiko.AuthenticationException:
+        print(f"Failed to authenticate to {hostname} ({ip_address}) on port {port}. Invalid credentials.")
+    except paramiko.SSHException as e:
+        print(f"SSH connection to {hostname} ({ip_address}) on port {port} failed: {str(e)}")
+    except Exception as e:
+        print(f"An error occurred while connecting to {hostname} ({ip_address}) on port {port}: {str(e)}")
+    finally:
+        client.close()
         
 # <--! END SSH TEST AREA !-->
 
@@ -215,18 +215,18 @@ def main(page: ft.Page):
     linux_hosts = [
         {
             "host_name": "eve-qa-em-912",
-            "ip_address": "10.15.0.12",
+            "ip_address": "10.110.1.75",
             "port": 22,
-            "ssh_user": "monitor",
-            "ssh_password": "",
+            "ssh_user": "root",
+            "ssh_password": "Vlabs123$$$",
             "ssh_key_file": None,
         },
         {
             "host_name": "eve-qa-app-912",
-            "ip_address": "10.15.0.13",
+            "ip_address": "10.110.1.74",
             "port": 22,
             "ssh_user": "root",
-            "ssh_password": "secret",
+            "ssh_password": "Vlabs123$$$",
             "ssh_key_file": None,
         },
     ]
@@ -282,14 +282,17 @@ def main(page: ft.Page):
         print(f"SSH User: {host['ssh_user']}")
         print(f"SSH Password: {host['ssh_password']}")
         print(f"SSH Key: {host['ssh_key_file']}")
-        print("Simulating SSH connection & resource monitoring...\n")
+        # print("Simulating SSH connection & resource monitoring...\n")
+        print("Testing SSH connection for Forescout appliance(s) resource monitoring...\n")
+        print('DEBUG: not using hostname in test_linux_host, using the ip address... fix me later')
         # hostname = host.get('host_name')
-        # ip_address = host.get('ip_address')
-        # port = host.get('port')
-        # ssh_user = host.get('ssh_user')
-        # ssh_password = host.get('ssh_password')
-        # ssh_key_file = host.get('ssh_key_file')
-        # test_ssh_connection(hostname, ip_address, port, ssh_user, ssh_password, ssh_key_file)
+        hostname = host.get('ip_address')
+        ip_address = host.get('ip_address')
+        port = host.get('port')
+        ssh_user = host.get('ssh_user')
+        ssh_password = host.get('ssh_password')
+        ssh_key_file = host.get('ssh_key_file')
+        test_ssh_connection(hostname, ip_address, port, ssh_user, ssh_password, ssh_key_file)
 
 
     # ─────────────────────────────────────────────────────────

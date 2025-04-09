@@ -1,37 +1,62 @@
 import flet as ft
 import plotly.express as px
-import flet.plotly_chart as fpc  # Provided by Flet for Plotly integration
+import flet.plotly_chart as fpc
 import paramiko
 
+# -- SSH TEST AREA --
+def test_ssh_connection(hostname, ip_address, port, username, password=None, key=None):
+    """
+    Attempts to SSH to the given host using Paramiko.
+    Returns (success, message) to indicate pass/fail and the reason.
+    """
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-# <--! SSH TEST AREA !-->
-# def test_ssh_connection(hostname, ip_address, port, username, password=None, key=None):
-#     client = paramiko.SSHClient()
-#     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    
-#     try:
-#         if key:
-#             private_key = paramiko.RSAKey.from_private_key_file(key)
-#             client.connect(hostname=hostname, port=port, username=username, pkey=private_key)
-#         else:
-#             client.connect(hostname=hostname, port=port, username=username, password=password)
-        
-#         print(f"SSH connection to {hostname} ({ip_address}) on port {port} successful!")
-#     except paramiko.AuthenticationException:
-#         print(f"Failed to authenticate to {hostname} ({ip_address}) on port {port}. Invalid credentials.")
-#     except paramiko.SSHException as e:
-#         print(f"SSH connection to {hostname} ({ip_address}) on port {port} failed: {str(e)}")
-#     except Exception as e:
-#         print(f"An error occurred while connecting to {hostname} ({ip_address}) on port {port}: {str(e)}")
-#     finally:
-#         client.close()
-        
-# <--! END SSH TEST AREA !-->
+    try:
+        if key:
+            # If using a key file
+            private_key = paramiko.RSAKey.from_private_key_file(key)
+            client.connect(
+                hostname=hostname,
+                port=port,
+                username=username,
+                pkey=private_key,
+                timeout=10
+            )
+        else:
+            # If using username/password
+            client.connect(
+                hostname=hostname,
+                port=port,
+                username=username,
+                password=password,
+                timeout=10
+            )
 
-# EAP methods and inner functions for the actual tests
+        msg = f"SSH connection to {hostname} ({ip_address}) on port {port} successful!"
+        print(msg)
+        return (True, msg)
+
+    except paramiko.AuthenticationException:
+        msg = f"Failed to authenticate to {hostname} ({ip_address}) on port {port}. Invalid credentials."
+        print(msg)
+        return (False, msg)
+    except paramiko.SSHException as e:
+        msg = f"SSH connection to {hostname} ({ip_address}) on port {port} failed: {str(e)}"
+        print(msg)
+        return (False, msg)
+    except Exception as e:
+        msg = f"An error occurred while connecting to {hostname} ({ip_address}) on port {port}: {str(e)}"
+        print(msg)
+        return (False, msg)
+    finally:
+        client.close()
+
+
+# -- EAP/PEAP placeholder tests --
 def run_peap_test(username, password, server_ip, port, timeout, inner_method):
     """
-    A simple placeholder function that "runs" a PEAP test.
+    Placeholder function that "runs" a PEAP test.
     In a real app, you'd have logic to connect to the server
     or call an API to verify PEAP connectivity.
     """
@@ -47,18 +72,17 @@ def run_peap_test(username, password, server_ip, port, timeout, inner_method):
 
 
 def main(page: ft.Page):
-    # PAGE CONFIG
-    # page.title = "Automated Test Manager"
+    # -- Page config --
     page.title = "RADIUS Simulation Engine - Upstart Cyber, LLC"
     page.window_width = 500
     page.window_height = 600
 
-    # DEFINE LIGHT THEME
+    # -- Theming --
     light_theme = ft.Theme(
         color_scheme=ft.ColorScheme(
-            primary="#00ADEF",    # Forescout teal
+            primary="#00ADEF",
             on_primary="white",
-            secondary="#00ADEF",  # Also teal
+            secondary="#00ADEF",
             on_secondary="white",
             background="white",
             on_background="black",
@@ -66,8 +90,6 @@ def main(page: ft.Page):
             on_surface="black",
         )
     )
-
-    # DEFINE DARK THEME
     dark_theme = ft.Theme(
         color_scheme=ft.ColorScheme(
             primary="#00ADEF",
@@ -80,25 +102,19 @@ def main(page: ft.Page):
             on_surface="white",
         )
     )
-
-    # INITIAL THEME MODE: DARK
     page.theme_mode = ft.ThemeMode.DARK
     page.theme = light_theme
     page.dark_theme = dark_theme
-    page.bgcolor = "black"  # Dark by default
+    page.bgcolor = "black"
 
-    # IN-MEMORY STATE FOR USER
+    # -- In-memory app state --
     user_data = {
         "logged_in": False,
         "username": "",
     }
+    settings_data = {"persistent_config": False}
 
-    # Simple in-memory settings data
-    settings_data = {
-        "persistent_config": False,  # Default to off
-    }
-
-    # A SIMPLE LIST OF TESTS
+    # -- Sample test entries --
     tests = [
         {"id": "test1", "name": "Automated WLAN Test"},
         {"id": "test2", "name": "Automated Wired Test"},
@@ -106,7 +122,7 @@ def main(page: ft.Page):
         {"id": "test4", "name": "IPv6 Regression Testing"},
     ]
 
-    # PER-TEST CONFIG (EAP, EAP-TLS, etc.)
+    # -- Test configs (for EAP, etc.) --
     test_configs = {
         "test1": {
             "username": "",
@@ -157,7 +173,6 @@ def main(page: ft.Page):
             "certificate_file": None,
         },
     }
-
     eap_options = ["PEAP", "EAP-TLS", "EAP-TTLS", "EAP-FAST"]
     inner_methods_map = {
         "PEAP": ["MSCHAPv2", "GTC"],
@@ -165,9 +180,7 @@ def main(page: ft.Page):
         "EAP-FAST": ["MSCHAPv2", "GTC"],
     }
 
-    # ------------------------------------------------------------------
-    # CLIENTS DATA
-    # ------------------------------------------------------------------
+    # -- Sample client data --
     clients = [
         {
             "client_name": "TestClient1",
@@ -187,9 +200,7 @@ def main(page: ft.Page):
         },
     ]
 
-    # ------------------------------------------------------------------
-    # REMOTE VMS DATA (For wpa_supplicant & eapol_test over SSH)
-    # ------------------------------------------------------------------
+    # -- Sample VM data --
     vms = [
         {
             "vm_name": "UbuntuTestVM",
@@ -197,7 +208,7 @@ def main(page: ft.Page):
             "port": 22,
             "ssh_user": "testuser",
             "ssh_password": "secret",
-            "ssh_key_file": None,  # optional
+            "ssh_key_file": None,
         },
         {
             "vm_name": "CentOSVM",
@@ -209,31 +220,27 @@ def main(page: ft.Page):
         },
     ]
 
-    # ------------------------------------------------------------------
-    # REMOTE Forescout HOSTS (FOR RESOURCE MONITORING)
-    # ------------------------------------------------------------------
+    # -- Sample Forescout (Linux) hosts for resource monitoring --
     linux_hosts = [
         {
             "host_name": "eve-qa-em-912",
-            "ip_address": "10.15.0.12",
+            "ip_address": "10.110.1.75",
             "port": 22,
-            "ssh_user": "monitor",
-            "ssh_password": "",
+            "ssh_user": "root",
+            "ssh_password": "Vlabs123$$$",
             "ssh_key_file": None,
         },
         {
             "host_name": "eve-qa-app-912",
-            "ip_address": "10.15.0.13",
+            "ip_address": "10.110.1.74",
             "port": 22,
             "ssh_user": "root",
-            "ssh_password": "secret",
+            "ssh_password": "Vlabs123$$$",
             "ssh_key_file": None,
         },
     ]
 
-    # ------------------------------------------------------------------
-    # DIAGNOSTICS DATA
-    # ------------------------------------------------------------------
+    # -- Sample Diagnostics data --
     diagnostics_data = {
         "UbuntuTestVM": {
             "cpu_percent": [20, 25, 23, 30],
@@ -247,54 +254,40 @@ def main(page: ft.Page):
         },
     }
 
-    # ─────────────────────────────────────────────────────────
-    # TEST FUNCTIONS FOR CLIENTS & VMs
-    # ─────────────────────────────────────────────────────────
-    def test_client_config(client_idx: int):
-        """Placeholder for testing each client config."""
-        c = clients[client_idx]
+    # -- Stub test logic for Clients, VMs, Linux Hosts
+    def test_client_config(idx: int):
+        c = clients[idx]
         print("=== Testing Client Configuration ===")
+        # Stub
         print(f"Name: {c['client_name']}")
-        print(f"MAC: {c['mac_address']}")
-        print(f"IP: {c['ip_address']}")
-        print(f"RadSec: {c['use_radsec']}")
-        print(f"Cert: {c['certificate_file']}")
-        print(f"Secret: {c['client_secret']}")
-        print("Simulating client connectivity test...\n")
+        print("Simulating client connectivity...\n")
 
-    def test_vm_config(vm_idx: int):
-        """Placeholder for testing each VM config."""
-        vm = vms[vm_idx]
+    def test_vm_config(idx: int):
+        vm = vms[idx]
         print("=== Testing VM Configuration ===")
-        print(f"Name: {vm['vm_name']}")
-        print(f"Host: {vm['host']}:{vm['port']}")
-        print(f"SSH User: {vm['ssh_user']}")
-        print(f"SSH Password: {vm['ssh_password']}")
-        print(f"SSH Key: {vm['ssh_key_file']}")
-        print("Simulating VM connectivity test...\n")
+        print("Simulating VM connectivity...\n")
 
     def test_linux_host(idx: int):
-        """Placeholder for testing each Linux host config for resource monitoring."""
+        """
+        Actually tries an SSH connection with paramiko for resource monitoring.
+        Returns (success, message)
+        """
         host = linux_hosts[idx]
-        print("=== Testing Linux Host Configuration ===")
-        print(f"Name: {host['host_name']}")
-        print(f"IP: {host['ip_address']}:{host['port']}")
-        print(f"SSH User: {host['ssh_user']}")
-        print(f"SSH Password: {host['ssh_password']}")
-        print(f"SSH Key: {host['ssh_key_file']}")
-        print("Simulating SSH connection & resource monitoring...\n")
-        # hostname = host.get('host_name')
-        # ip_address = host.get('ip_address')
-        # port = host.get('port')
-        # ssh_user = host.get('ssh_user')
-        # ssh_password = host.get('ssh_password')
-        # ssh_key_file = host.get('ssh_key_file')
-        # test_ssh_connection(hostname, ip_address, port, ssh_user, ssh_password, ssh_key_file)
+        print("=== Testing Forescout Host ===")
+        hostname = host.get('ip_address')  # using IP for paramiko
+        ip_address = host.get('ip_address')
+        port = host.get('port')
+        ssh_user = host.get('ssh_user')
+        ssh_password = host.get('ssh_password')
+        ssh_key_file = host.get('ssh_key_file')
 
+        success, message = test_ssh_connection(
+            hostname, ip_address, port,
+            ssh_user, password=ssh_password, key=ssh_key_file
+        )
+        return (success, message)
 
-    # ─────────────────────────────────────────────────────────
-    # ROUTE HANDLER
-    # ─────────────────────────────────────────────────────────
+    # -- Route handler --
     def route_change(event: ft.RouteChangeEvent):
         route = event.route
         page.views.clear()
@@ -356,20 +349,17 @@ def main(page: ft.Page):
 
     page.on_route_change = route_change
 
-    # ─────────────────────────────────────────────────────────
-    # 1. LOGIN VIEW
-    # ─────────────────────────────────────────────────────────
+    # -- 1. Login view --
     def build_login_view():
-        # ... [Unchanged from your code]
         username_tf = ft.TextField(
             label="Username", 
             width=300,
-            on_submit=lambda e: login_click(e)
-        )
+            on_submit=lambda e: login_click(e),
+            )
         password_tf = ft.TextField(
-            label="Password",
-            password=True,
-            can_reveal_password=True,
+            label="Password", 
+            password=True, 
+            can_reveal_password=True, 
             width=300,
             on_submit=lambda e: login_click(e)
         )
@@ -389,9 +379,7 @@ def main(page: ft.Page):
 
         return ft.View(
             "/",
-            vertical_alignment=ft.MainAxisAlignment.CENTER,
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            controls=[
+            [
                 ft.Text("Welcome! Please log in.", size=24, weight=ft.FontWeight.BOLD),
                 ft.Divider(height=10, color="transparent"),
                 username_tf,
@@ -405,19 +393,17 @@ def main(page: ft.Page):
                     bgcolor="#00ADEF",
                 ),
             ],
+            vertical_alignment=ft.MainAxisAlignment.CENTER,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         )
 
-    # ─────────────────────────────────────────────────────────
-    # 2. MAIN TESTS VIEW
-    # ─────────────────────────────────────────────────────────
+    # -- 2. Main view --
     def build_tests_view():
-        # ... [Mostly unchanged, new icon button for Linux Hosts]
         forescout_logo = ft.Image(
             src='https://images.store.crowdstrike.com/9748z14dd5zg/60SGqWYDWlrWJFsuQEZRV2/880c0144353da3a3904a84a98ee6731a/Forescout_icon_square.png',
             width=120,
             fit=ft.ImageFit.CONTAIN
         )
-
         welcome_text = ft.Text(f"Hello, {user_data['username']}!", size=22, weight=ft.FontWeight.W_600)
         instructions = ft.Text("Select a test to configure and run, or configure clients / VMs / Linux hosts / diagnostics.", size=16)
 
@@ -456,11 +442,7 @@ def main(page: ft.Page):
         top_bar = ft.Row(
             [
                 ft.Row(
-                    [
-                        forescout_logo,
-                        ft.VerticalDivider(width=10, color="transparent"),
-                        welcome_text
-                    ],
+                    [forescout_logo, ft.VerticalDivider(width=10, color="transparent"), welcome_text],
                     spacing=0,
                 ),
                 ft.Row(
@@ -468,7 +450,6 @@ def main(page: ft.Page):
                         ft.IconButton(icon=ft.Icons.MONITOR_HEART, tooltip="Diagnostics", on_click=diagnostics_click),
                         ft.IconButton(icon=ft.Icons.DEVICE_HUB, tooltip="Configure VMs", on_click=vms_click),
                         ft.IconButton(icon=ft.Icons.ROUTER, tooltip="Configure Clients", on_click=clients_click),
-                        # ft.IconButton(icon=ft.Icons.COMPUTER, tooltip="Forescout Devices", on_click=linux_hosts_click),
                         ft.IconButton(icon=ft.Icons.SECURITY, tooltip="Forescout Devices", on_click=linux_hosts_click),
                         ft.IconButton(icon=ft.Icons.SETTINGS, tooltip="Settings", on_click=settings_click),
                         ft.IconButton(icon=ft.Icons.LOGOUT, tooltip="Logout", on_click=logout_click),
@@ -491,17 +472,7 @@ def main(page: ft.Page):
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         )
 
-    # ─────────────────────────────────────────────────────────
-    # 3. TEST CONFIG VIEW
-    # ─────────────────────────────────────────────────────────
-    def build_test_config_view(test_id: str):
-        # [Same as before...]
-        config = test_configs[test_id]
-        # ...
-        # [Omitted for brevity; unchanged from your code]
-        pass
-
-    # [Paste your existing build_test_config_view here...]
+    # -- 3. Test Config view --
     def build_test_config_view(test_id: str):
         config = test_configs[test_id]
         test_title = next((t["name"] for t in tests if t["id"] == test_id), "Unknown Test")
@@ -527,10 +498,16 @@ def main(page: ft.Page):
         certificate_picker = ft.FilePicker(on_result=lambda e: handle_cert_selected(e))
         page.overlay.append(certificate_picker)
 
-        cert_label = ft.Text(value=(f"Selected cert: {config['certificate_file']}" if config["certificate_file"] else "No certificate selected"), size=14)
+        cert_label = ft.Text(
+            value=(f"Selected cert: {config['certificate_file']}" if config["certificate_file"] else "No certificate selected"),
+            size=14
+        )
 
         def select_certificate(e):
-            certificate_picker.pick_files(allow_multiple=False, dialog_title="Select Certificate File")
+            certificate_picker.pick_files(
+                allow_multiple=False,
+                dialog_title="Select Certificate File"
+            )
 
         select_cert_button = ft.ElevatedButton("Select Certificate", color="white", bgcolor="#00ADEF", on_click=select_certificate)
 
@@ -626,11 +603,7 @@ def main(page: ft.Page):
                     print(f"Running test with EAP type: {eap_type} (no stub function yet).")
 
             page.snack_bar = ft.SnackBar(
-                ft.Text(
-                    f"Running {test_title} with EAP={config['eap_type']} "
-                    f"(Inner={config['inner_method']}), Cert={config['certificate_file']}",
-                    color="white"
-                ),
+                ft.Text(f"Running {test_title} with EAP={config['eap_type']} (Inner={config['inner_method']})", color="white"),
                 bgcolor="#00ADEF",
             )
             page.snack_bar.open = True
@@ -674,16 +647,7 @@ def main(page: ft.Page):
         update_eap_ui_visibility()
         return view
 
-    # ─────────────────────────────────────────────────────────
-    # 4. CLIENTS VIEW
-    # ─────────────────────────────────────────────────────────
-    def build_clients_view():
-        # ... [Same as your client page with "Test" button]
-        # ...
-        pass
-
-    # [Paste your existing clients code...]
-
+    # -- 4. Clients View --
     def build_clients_view():
         def update_client_list():
             clients_col.controls.clear()
@@ -846,10 +810,7 @@ def main(page: ft.Page):
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                 ),
                 ft.Divider(),
-                ft.Text(
-                    "Add, edit, or remove clients below. If 'Use RadSec' is enabled, configure a certificate and secret:",
-                    size=16
-                ),
+                ft.Text("Add, edit, or remove clients below. If 'Use RadSec' is enabled, configure a certificate and secret:", size=16),
                 clients_col,
                 ft.Row(
                     [
@@ -864,20 +825,12 @@ def main(page: ft.Page):
             scroll=ft.ScrollMode.AUTO
         )
 
-    # ─────────────────────────────────────────────────────────
-    # 5. VMS VIEW
-    # ─────────────────────────────────────────────────────────
-    def build_vms_view():
-        # ... [Same as your existing VM page with "Test" buttons]
-        # ...
-        pass
-
+    # -- 5. VMs view --
     def build_vms_view():
         def update_vms_list():
             vms_col.controls.clear()
             for idx, vm in enumerate(vms):
-                row = build_vm_section(idx, vm)
-                vms_col.controls.append(row)
+                vms_col.controls.append(build_vm_section(idx, vm))
             page.update()
 
         vm_key_picker = ft.FilePicker(on_result=lambda e: handle_vm_key(e))
@@ -885,36 +838,31 @@ def main(page: ft.Page):
 
         def open_vm_key_picker(index):
             vm_key_picker.data = index
-            vm_key_picker.pick_files(
-                allow_multiple=False,
-                dialog_title="Select SSH Key File"
-            )
+            vm_key_picker.pick_files(allow_multiple=False, dialog_title="Select SSH Key File")
 
         def handle_vm_key(e: ft.FilePickerResultEvent):
             if e.files and len(e.files) > 0:
                 chosen_file = e.files[0].path
-                vm_idx = e.control.data
-                vms[vm_idx]["ssh_key_file"] = chosen_file
+                idx = e.control.data
+                vms[idx]["ssh_key_file"] = chosen_file
             else:
-                vm_idx = e.control.data
-                vms[vm_idx]["ssh_key_file"] = None
+                idx = e.control.data
+                vms[idx]["ssh_key_file"] = None
             update_vms_list()
 
         def run_wpa_supplicant(idx):
             vm = vms[idx]
             print("----- RUNNING WPA_SUPPLICANT -----")
             print(f"VM: {vm['vm_name']} @ {vm['host']}:{vm['port']}")
-            print(f"SSH User: {vm['ssh_user']}")
-            print(f"SSH Key: {vm['ssh_key_file']}")
-            print("Simulating remote SSH call to start wpa_supplicant...")
+            # Stub logic
+            print("Simulating remote SSH call to start wpa_supplicant...\n")
 
         def run_eapol_test(idx):
             vm = vms[idx]
             print("----- RUNNING EAPOL_TEST -----")
             print(f"VM: {vm['vm_name']} @ {vm['host']}:{vm['port']}")
-            print(f"SSH User: {vm['ssh_user']}")
-            print(f"SSH Key: {vm['ssh_key_file']}")
-            print("Simulating remote SSH call to run eapol_test...")
+            # Stub logic
+            print("Simulating remote SSH call to run eapol_test...\n")
 
         def test_vm_button_click(idx):
             test_vm_config(idx)
@@ -926,47 +874,29 @@ def main(page: ft.Page):
             page.update()
 
         def build_vm_section(idx, vm):
-            vm_name_tf = ft.TextField(
-                label="VM Name",
-                width=200,
-                value=vm["vm_name"],
-                on_change=lambda e: save_vm_changes(idx, "vm_name", e.control.value)
-            )
-            host_tf = ft.TextField(
-                label="Host/IP",
-                width=200,
-                value=vm["host"],
-                on_change=lambda e: save_vm_changes(idx, "host", e.control.value)
-            )
-            port_tf = ft.TextField(
-                label="SSH Port",
-                width=100,
-                value=str(vm["port"]),
-                on_change=lambda e: save_vm_changes(idx, "port", e.control.value)
-            )
-            user_tf = ft.TextField(
-                label="SSH Username",
-                width=200,
-                value=vm["ssh_user"],
-                on_change=lambda e: save_vm_changes(idx, "ssh_user", e.control.value)
-            )
-            pass_tf = ft.TextField(
-                label="SSH Password",
-                width=200,
-                value=vm["ssh_password"],
-                password=True,
-                can_reveal_password=True,
-                on_change=lambda e: save_vm_changes(idx, "ssh_password", e.control.value)
-            )
+            vm_name_tf = ft.TextField(label="VM Name", width=200, value=vm["vm_name"],
+                on_change=lambda e: save_vm_changes(idx, "vm_name", e.control.value))
+            host_tf = ft.TextField(label="Host/IP", width=200, value=vm["host"],
+                on_change=lambda e: save_vm_changes(idx, "host", e.control.value))
+            port_tf = ft.TextField(label="SSH Port", width=100, value=str(vm["port"]),
+                on_change=lambda e: save_vm_changes(idx, "port", e.control.value))
+            user_tf = ft.TextField(label="SSH Username", width=200, value=vm["ssh_user"],
+                on_change=lambda e: save_vm_changes(idx, "ssh_user", e.control.value))
+            pass_tf = ft.TextField(label="SSH Password", width=200, value=vm["ssh_password"],
+                password=True, can_reveal_password=True,
+                on_change=lambda e: save_vm_changes(idx, "ssh_password", e.control.value))
 
-            pick_key_btn = ft.ElevatedButton("Select SSH Key", color="white", bgcolor="#00ADEF", on_click=lambda e: open_vm_key_picker(idx))
+            pick_key_btn = ft.ElevatedButton("Select SSH Key", color="white", bgcolor="#00ADEF",
+                on_click=lambda e: open_vm_key_picker(idx))
             key_label = ft.Text(value=(f"Key: {vm['ssh_key_file']}" if vm["ssh_key_file"] else "No key selected"), size=14)
 
             run_wpa_btn = ft.ElevatedButton("Test wpa_supplicant", on_click=lambda e: run_wpa_supplicant(idx))
             run_eapol_btn = ft.ElevatedButton("Test eapol_test", on_click=lambda e: run_eapol_test(idx))
-            test_vm_btn = ft.ElevatedButton("Test VM", color="white", bgcolor="#00ADEF", on_click=lambda e: test_vm_button_click(idx))
+            test_vm_btn = ft.ElevatedButton("Test VM", color="white", bgcolor="#00ADEF",
+                on_click=lambda e: test_vm_button_click(idx))
 
-            remove_btn = ft.IconButton(icon=ft.Icons.DELETE, tooltip="Remove this VM", on_click=lambda e: remove_vm(idx))
+            remove_btn = ft.IconButton(icon=ft.Icons.DELETE, tooltip="Remove this VM",
+                on_click=lambda e: remove_vm(idx))
 
             return ft.Column(
                 [
@@ -1043,28 +973,22 @@ def main(page: ft.Page):
             scroll=ft.ScrollMode.AUTO
         )
 
-    # ─────────────────────────────────────────────────────────
-    # 6. LINUX HOSTS VIEW (NEW PAGE)
-    # ─────────────────────────────────────────────────────────
+    # -- 6. Linux Hosts (Forescout) View --
     def build_linux_hosts_view():
-        """
-        Manage remote Linux hosts for resource monitoring.
-        """
         def update_hosts_list():
             hosts_col.controls.clear()
             for idx, host in enumerate(linux_hosts):
-                row = build_linux_host_section(idx, host)
-                hosts_col.controls.append(row)
+                hosts_col.controls.append(build_linux_host_section(idx, host))
             page.update()
 
-        # Stub function to test a single host's config
         def test_linux_host_button_click(idx):
-            test_linux_host(idx)
+            success, message = test_linux_host(idx)
             page.snack_bar = ft.SnackBar(
-                content=ft.Text(f"Test run for {linux_hosts[idx]['host_name']}", color="white"),
-                bgcolor="#00ADEF",
+                content=ft.Text(message, color="white"),
+                bgcolor="#00ADEF" if success else "#FF0000",
             )
             page.snack_bar.open = True
+            # Force a UI update so the snack bar appears
             page.update()
 
         key_picker = ft.FilePicker(on_result=lambda e: handle_ssh_key(e))
@@ -1220,16 +1144,13 @@ def main(page: ft.Page):
             scroll=ft.ScrollMode.AUTO
         )
 
-    # ─────────────────────────────────────────────────────────
-    # 7. SETTINGS VIEW (FOR THEME TOGGLE, ETC.)
-    # ─────────────────────────────────────────────────────────
+    # -- 7. Settings View --
     def build_settings_view():
         dark_mode_switch = ft.Switch(
             label="Enable Dark Mode",
             value=(page.theme_mode == ft.ThemeMode.DARK),
             on_change=toggle_dark_mode
         )
-
         persistent_switch = ft.Switch(
             label="Persistent Configuration",
             value=settings_data["persistent_config"],
@@ -1280,9 +1201,7 @@ def main(page: ft.Page):
         settings_data["persistent_config"] = new_val
         print(f"Persistent Configuration set to: {new_val}")
 
-    # ─────────────────────────────────────────────────────────
-    # 8. DIAGNOSTICS VIEW (Graphical Resource Utilization)
-    # ─────────────────────────────────────────────────────────
+    # -- 8. Diagnostics View --
     def build_diagnostics_view():
         chart_container = ft.Column()
 
@@ -1357,11 +1276,11 @@ def main(page: ft.Page):
         update_charts()
         return view
 
-    # INITIALIZE
+    # -- Initialize --
     page.on_route_change = route_change
     page.go("/")
 
 
 if __name__ == "__main__":
-    # Make sure you have `pip install plotly` for the charts
+    # Make sure you have paramiko & plotly installed
     ft.app(target=main)
