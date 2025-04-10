@@ -14,7 +14,6 @@ def connect_ssh_and_run_command(
     and run a command. Returns the command output or any errors.
     """
 
-    # Create SSH client
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
@@ -43,51 +42,103 @@ def connect_ssh_and_run_command(
 
 def main(page: ft.Page):
     page.title = "Flet SSH Demo"
-    page.window_width = 800
-    page.window_height = 600
+    page.window_width = 900
+    page.window_height = 700
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
     page.scroll = ft.ScrollMode.AUTO
-    
+
     # In-memory list of configurations (host, user, password, keyfile)
     # Each entry = { "host": ..., "username": ..., "password": ..., "key_file": ... }
     ssh_configs = []
 
-    # ----- UI Elements for Config Form -----
-    txt_host = ft.TextField(label="Host", width=250)
-    txt_user = ft.TextField(label="Username", width=200)
-    txt_password = ft.TextField(label="Password", password=True, width=200)
-    txt_keyfile = ft.TextField(label="Key File Path", width=250)
-    
-    def add_ssh_config(e):
+    # We’ll track whether the latest SSH test was successful:
+    test_ok = False
+
+    # ---- UI Elements for Config Form ----
+    txt_host = ft.TextField(label="Host", width=300)
+    txt_user = ft.TextField(label="Username", width=250)
+    txt_password = ft.TextField(label="Password", password=True, width=250)
+    txt_keyfile = ft.TextField(label="Key File Path", width=300)
+
+    lbl_test_result = ft.Text(value="", color="red")
+    lbl_status = ft.Text(value="", color="red")
+
+    # "Add SSH Config" starts disabled, only becomes enabled after a successful test.
+    btn_add_config = ft.ElevatedButton(
+        text="Add SSH Config",
+        disabled=True,  
+    )
+
+    def test_ssh_config(e):
+        nonlocal test_ok
+        # Clear any previous test results
+        lbl_test_result.value = ""
+        btn_add_config.disabled = True
+        page.update()
+
         # Basic validation
-        if not txt_host.value or not txt_user.value:
-            lbl_status.value = "Host and username are required."
+        if not txt_host.value.strip() or not txt_user.value.strip():
+            lbl_test_result.value = "Error: Host and username are required."
             page.update()
             return
-        # Save the config
+
+        # Attempt test connection
+        result = connect_ssh_and_run_command(
+            host=txt_host.value.strip(),
+            username=txt_user.value.strip(),
+            password=txt_password.value,
+            key_file=txt_keyfile.value.strip(),
+            command="echo SSH connection test successful!"
+        )
+
+        # If the result starts with "Connection or command error",
+        # or if "ERROR" is in the returned text, we assume it failed.
+        if "error" in result.lower() or "ERROR:" in result:
+            lbl_test_result.value = f"Connection Test FAILED:\n{result}"
+            test_ok = False
+        else:
+            lbl_test_result.value = f"Connection Test SUCCESS:\n{result}"
+            test_ok = True
+            btn_add_config.disabled = False
+
+        page.update()
+
+    def add_ssh_config(e):
+        nonlocal test_ok
+        # If test was never successful, do nothing
+        if not test_ok:
+            lbl_status.value = "Please test connection successfully before adding."
+            page.update()
+            return
+
         config = {
             "host": txt_host.value.strip(),
             "username": txt_user.value.strip(),
-            "password": txt_password.value,  # can be empty
-            "key_file": txt_keyfile.value.strip()  # can be empty
+            "password": txt_password.value,
+            "key_file": txt_keyfile.value.strip()
         }
         ssh_configs.append(config)
         lbl_status.value = f"Added host config for {txt_host.value}."
         page.update()
 
-        # Clear fields
+        # Clear fields and disable "Add" again until next test
         txt_host.value = ""
         txt_user.value = ""
         txt_password.value = ""
         txt_keyfile.value = ""
+        lbl_test_result.value = ""
+        test_ok = False
+        btn_add_config.disabled = True
         page.update()
+        refresh_host_list()
 
-    btn_add_config = ft.ElevatedButton(
-        text="Add SSH Config",
-        on_click=add_ssh_config
+    # Assign the add_ssh_config function to the button
+    btn_add_config.on_click = add_ssh_config
+
+    btn_test_connection = ft.ElevatedButton(
+        text="Test Connection",
+        on_click=test_ssh_config
     )
-
-    lbl_status = ft.Text(value="", color="red")
 
     config_form = ft.Column(
         controls=[
@@ -96,17 +147,15 @@ def main(page: ft.Page):
             txt_user,
             txt_password,
             txt_keyfile,
-            btn_add_config,
+            ft.Row([btn_test_connection, btn_add_config], spacing=20),
+            lbl_test_result,
             lbl_status
         ],
         spacing=10
     )
 
-    # ----- UI Elements for Running Commands -----
-    # Dropdown or other control to select which host config to use
-    ddl_hosts = ft.Dropdown(label="Select SSH Host", width=300, options=[])
-
-    # Output area
+    # ---- UI Elements for Running Commands ----
+    ddl_hosts = ft.Dropdown(label="Select SSH Host", width=400, options=[])
     txt_output = ft.Text(value="", selectable=True)
 
     def refresh_host_list():
@@ -116,18 +165,16 @@ def main(page: ft.Page):
         ]
         page.update()
 
-    def run_command(e, command_str: str):
-        if not ddl_hosts.value:
-            txt_output.value = "Please select a host configuration."
+    def run_command(command_str: str):
+        selected_label = ddl_hosts.value
+        if not selected_label:
+            txt_output.value = "Please select a host configuration first."
             page.update()
             return
 
         # Find chosen config
-        selected_label = ddl_hosts.value
         chosen_config = None
         for c in ssh_configs:
-            # e.g. "192.168.1.5 (admin)"
-            # We can match host+user to identify the correct config
             label = f"{c['host']} ({c['username']})"
             if label == selected_label:
                 chosen_config = c
@@ -137,8 +184,8 @@ def main(page: ft.Page):
             txt_output.value = "Configuration not found. Please re-add."
             page.update()
             return
-        
-        # Connect via SSH and run the command
+
+        # Connect via SSH and run command
         result = connect_ssh_and_run_command(
             host=chosen_config["host"],
             username=chosen_config["username"],
@@ -150,10 +197,10 @@ def main(page: ft.Page):
         page.update()
 
     def cat_connect_plugin_log(e):
-        run_command(e, "cat /shared/fslog/plugin/connect_module/connect_module.log")
+        run_command("cat /shared/fslog/plugin/connect_module/connect_module.log")
 
     def cat_connect_python_log(e):
-        run_command(e, "cat /usr/local/forescout/plugin/connect_module/python_logs/python_server.log")
+        run_command("cat /usr/local/forescout/plugin/connect_module/python_logs/python_server.log")
 
     btn_cat_connect_plugin_log = ft.ElevatedButton(
         text="Cat Connect Plugin Log",
@@ -164,28 +211,18 @@ def main(page: ft.Page):
         on_click=cat_connect_python_log
     )
 
-    # After adding a config, we can refresh the dropdown
-    def on_config_added(e):
-        refresh_host_list()
-
-    # btn_add_config.on_click = [add_ssh_config, on_config_added]
-    btn_add_config = ft.ElevatedButton(
-    text="Add SSH Config",
-    on_click=lambda e: (add_ssh_config(e), on_config_added(e))
-)
-
-
     command_controls = ft.Column(
         controls=[
             ft.Text("Run SSH Commands", style="headlineSmall"),
             ddl_hosts,
-            ft.Row(controls=[btn_cat_connect_plugin_log, btn_cat_connect_python_log]),
+            ft.Row([btn_cat_connect_plugin_log, btn_cat_connect_python_log]),
             ft.Text("Output:"),
             txt_output
         ],
         spacing=10
     )
 
+    # ---- Layout the page ----
     main_layout = ft.Column(
         controls=[
             config_form,
@@ -198,6 +235,5 @@ def main(page: ft.Page):
 
     page.add(main_layout)
 
-# Run the app
 if __name__ == "__main__":
     ft.app(target=main)
